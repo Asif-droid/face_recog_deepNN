@@ -12,7 +12,7 @@ app.prepare(ctx_id=-1)  # Use -1 for CPU, or specify a GPU ID if available
 # model = insightface.app.FaceAnalysis()
 # model.prepare(ctx_id=-1)
 # face_recg2\face_recog_deepNN\dnn_face_recog\videos\received_1179123699699768.mp4 face_recg2\face_recog_deepNN\dnn_face_recog\videos\face-demographics-walking.mp4
-video_path = 'videos/received_1179123699699768.mp4'  # Replace with your video file pathface_recg2\face_recog_deepNN\dnn_face_recog\videos\classroom.mp4
+video_path = 'videos/face-demographics-walking.mp4'  # Replace with your video file pathface_recg2\face_recog_deepNN\dnn_face_recog\videos\classroom.mp4
 video_capture = cv2.VideoCapture(0)
 # video_capture = cv2.VideoCapture(video_path)
 

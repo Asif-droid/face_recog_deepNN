@@ -1,0 +1,9 @@
+pyvenv.cfg
+Scripts
+Lib
+Include
+insightface
+videos
+share
+__pycache__
+images
