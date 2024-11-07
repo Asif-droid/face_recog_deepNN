@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Attendance</title>
+    <script>
+        async function updateAttendance() {
+            const response = await fetch('/process_image', { method: 'POST' });
+            const result = await response.json();
+            if (result.attendance) {
+                const attendanceList = document.getElementById('attendance-list');
+                attendanceList.innerHTML = '';  // Clear previous list
+                for (const [name, status] of Object.entries(result.attendance)) {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `${name}: ${status}`;
+                    attendanceList.appendChild(listItem);
+                }
+            }
+        }
+        function closeWindow() {
+            const response = await fetch('/close', { method: 'POST' });
+        }
+    </script>
+</head>
+<body>
+    <h1>Face Recognition Attendance</h1>
+    <button onclick="updateAttendance()">Check Attendance</button>
+
+    <button onclick="closeWindow()">Close</button>
+</body>
+</html>

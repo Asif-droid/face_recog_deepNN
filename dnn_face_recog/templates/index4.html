@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>People Status</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* General Page Styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .beautiful-button_s {
+        background-color: #4CAF50; /* Green */
+        border: none;
+        color: white;
+        padding: 5px 2px;
+        text-align: center;
+        text-decoration:   
+        none;
+        display: inline-block;
+        font-size: 12px;
+        margin: 2px 1px;
+        cursor: pointer;
+        border-radius: 2px;
+        transition: background-color 0.3s ease;   
+        
+        }
+        
+        .beautiful-button_s:hover {
+        background-color: #3e8e41; /* Darker Green on hover */
+        }
+        .beautiful-button_d {
+        background-color: #f8390f; /* red */
+        border: none;
+        color: white;
+        padding: 5px 2px;
+        text-align: center;
+        text-decoration:   
+        none;
+        display: inline-block;
+        font-size: 12px;
+        margin: 2px 1px;
+        cursor: pointer;
+        border-radius: 2px;
+        transition: background-color 0.3s ease;   
+        
+        }
+        
+        .beautiful-button_d:hover {
+        background-color: #c1482e; /* Darker Green on hover */
+        }
+        /* img Styling */
+        #imageGallery {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            justify-content: center;
+            gap: 20px;
+        }
+        
+        .person-card {
+            background-color: #fff;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            width: 200px;
+            padding: 15px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .person-card img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+        
+        .person-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        /* Popup Styling */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .popup-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            width: 300px;
+        }
+
+        .popup-image {
+            width: 100%;
+            max-width: 250px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+
+        button {
+            margin-top: 10px;
+        }
+
+        /* Card Styling */
+        #cardContainer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .person-card {
+            background-color: #fff;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            width: 200px;
+            padding: 15px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .person-card img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+        .person-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .person-status {
+            font-size: 16px;
+        }
+
+        #loadingScreen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            font-size: 30px;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        #triggerButton {
+            margin-top: 30px;
+            padding: 15px 30px;
+            font-size: 20px;
+            background-color: #0073e6;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        #triggerButton:hover {
+            background-color: #005bb5;
+        }
+
+        /* Status Colors */
+        .status-online {
+            color: #4CBB17;
+            font-weight: bold;
+        }
+        .status-offline {
+            color: red;
+            font-weight: bold;
+        }
+        .status-away {
+            color: orange;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <h1>Person List</h1>
+    <div id="cardContainer"></div>
+</div>
+<div>
+    <h1>Unknown Persons</h1>
+    <div id="imageGallery"></div>
+</div>
+
+<!-- Loading Screen -->
+<div id="loadingScreen" ></div>
+
+<!-- Trigger Button -->
+<button id="triggerButton" onclick="showLoading()">Start Encoding New Images</button>
+
+<script>
+function fetchStatus() {
+    $.ajax({
+        url: '/get_status',
+        method: 'GET',
+        success: function(data) {
+            let cardContainer = $('#cardContainer');
+            cardContainer.empty();
+            data.forEach(person => {
+                const statusClass = person.status.toLowerCase() === 'present' ? 'status-online' :
+                                    person.status.toLowerCase() === 'absent' ? 'status-offline' :
+                                    'status-away';
+                const imageUrl = `images/known/${person.name}.jpg`;
+                const defaultAvatar = `images/default/default.jpg`;
+                cardContainer.append(
+                    `<div class="person-card">
+                        <img src="${imageUrl}" alt="${person.name}" onerror="this.onerror=null; this.src='${defaultAvatar}';">
+                        <div class="person-name">${person.name}</div>
+                        <div class="person-status ${statusClass}">${person.status}</div>
+                    </div>`
+                );
+            });
+        }
+    });
+}
+function fetchImages() {
+    $.ajax({
+        url: '/get_images', // Endpoint to fetch images
+        method: 'GET',
+        success: function(images) {
+            let gallery = $('#imageGallery');
+            gallery.empty(); // Clear any existing content
+
+            images.forEach(image => {
+                const defaultAvatar = 'images/default/default.jpg'; // Path to your default avatar
+
+                gallery.append(
+                    `<div class="person-card">
+                        <img src="${image.url}" alt="${image.name}" onerror="this.onerror=null; this.src='${defaultAvatar}';">
+                        <div class="person-name">${image.name}</div>
+                        <button class="beautiful-button_s" onclick="openPopup('${image.url}', '${image.name}')">Save Image</button>
+                        <button class="beautiful-button_d" onclick="deleteImage('${image.url}')">delete Image</button>
+                    </div>`
+                );
+            });
+        }
+    });
+}
+
+function showLoading() {
+    // Display the loading screen
+    document.getElementById('loadingScreen').style.display = 'flex';
+
+    // Make an AJAX request to the backend
+    $.ajax({
+        url: '/start_encoding',  // Endpoint to hit
+        method: 'POST',
+        success: function(response) {
+            // Hide the loading screen
+            document.getElementById('loadingScreen').style.display = 'none';
+
+            // Show the "Done" popup with the message from the backend
+            alert(response.message);
+        },
+        error: function() {
+            // Hide the loading screen in case of an error
+            document.getElementById('loadingScreen').style.display = 'none';
+            alert('An error occurred while processing the request.');
+        }
+    });
+}
+
+function openPopup(imageUrl, imageName) {
+    const popup = `
+        <div class="popup-overlay">
+            <div class="popup-content">
+                <h3>Save Image</h3>
+                <img src="${imageUrl}" alt="${imageName}" class="popup-image">
+                <label for="boxName">Box Name:</label>
+                <input type="text" id="boxName" placeholder="Enter name">
+                <button onclick="saveImage('${imageUrl}', document.getElementById('boxName').value)">Save</button>
+                <button onclick="closePopup()">Close</button>
+            </div>
+        </div>
+    `;
+    $('body').append(popup);
+}
+
+// Function to save the image
+function saveImage(imageUrl, boxName) {
+    if (!boxName) {
+        alert('Please enter a box name');
+        return;
+    }
+
+    $.ajax({
+        url: '/save_image',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ imageUrl, boxName }),
+        success: function(response) {
+            alert('Image saved successfully!');
+            closePopup();
+        },
+        error: function() {
+            alert('Error saving image');
+        }
+    });
+}
+function deleteImage(imageUrl) {
+    $.ajax({
+        url: '/delete_image',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ imageUrl }),
+        success: function(response) {
+            alert('Image deleted successfully!');
+            closePopup();
+        },
+        error: function() {
+            alert('Error saving image');
+        }
+    });
+}
+
+// Function to close the popup
+function closePopup() {
+    $('.popup-overlay').remove();
+}
+
+
+// Fetch data every 5 seconds
+setInterval(() => {
+    fetchStatus();
+    fetchImages(); // Add this line to call fetchImages periodically
+}, 5000);
+
+$(document).ready(function() {
+    fetchImages();
+    fetchStatus(); // Initial load 
+     // Load images on page ready
+});
+</script>
+</body>
+</html>

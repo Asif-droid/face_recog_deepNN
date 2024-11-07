@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>People Status</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* General Page Styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        /* Table Styling */
+        #statusTable {
+            width: 100%;
+            max-width: 600px;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #fff;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        #statusTable th, #statusTable td {
+            padding: 12px 15px;
+            text-align: left;
+        }
+        #statusTable th {
+            background-color: #0073e6;
+            color: white;
+        }
+        #statusTable tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        /* Status Colors */
+        .status-online {
+            color: green;
+            font-weight: bold;
+        }
+        .status-offline {
+            color: red;
+            font-weight: bold;
+        }
+        .status-away {
+            color: orange;
+            font-weight: bold;
+        }
+
+        /* Image Gallery Styling */
+        #imageGallery {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        #imageGallery div {
+            margin: 10px;
+            text-align: center;
+        }
+        #imageGallery img {
+            max-width: 150px;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <h1>Person List</h1>
+    <table id="statusTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<div id="imageGallery">
+    <h2>Unknown Persons</h2>
+    <!-- Images will be appended here -->
+</div>
+
+<script>
+function fetchStatus() {
+    $.ajax({
+        url: '/get_status',
+        method: 'GET',
+        success: function(data) {
+            let tableBody = $('#statusTable tbody');
+            tableBody.empty();
+            data.forEach(person => {
+                const statusClass = person.status.toLowerCase() === 'Present' ? 'status-online' :
+                                   person.status.toLowerCase() === 'Absent' ? 'status-offline' :
+                                   'status-away';
+                tableBody.append(
+                    `<tr>
+                        <td>${person.name}</td>
+                        <td class="${statusClass}">${person.status}</td>
+                    </tr>`
+                );
+            });
+        }
+    });
+}
+
+function fetchImages() {
+    $.ajax({
+        url: '/get_images', // Endpoint to fetch images
+        method: 'GET',
+        success: function(images) {
+            let gallery = $('#imageGallery');
+            images.forEach(image => {
+                gallery.append(
+                    `<div>
+                        <img src="${image.url}" alt="${image.name}">
+                        <p>${image.name}</p>
+                    </div>`
+                );
+            });
+        }
+    });
+}
+
+// Fetch data every 5 seconds
+setInterval(fetchStatus, 5000);
+$(document).ready(function() {
+    fetchStatus(); // Initial load
+    fetchImages(); // Load images on page ready
+});
+</script>
+</body>
+</html>

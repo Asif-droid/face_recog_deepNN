@@ -4,93 +4,253 @@ from insightface.app import FaceAnalysis
 import matplotlib.pyplot as plt
 import pickle
 from scipy.spatial.distance import cosine
+import numpy as np
+import time
+import threading
+import os
+from queue import Queue
 
 # Initialize the InsightFace app with desired models
+model_path="models/model"
 app = FaceAnalysis(allowed_modules=['detection', 'recognition'])
 app.prepare(ctx_id=-1)  # Use -1 for CPU, or specify a GPU ID if available
 
 # model = insightface.app.FaceAnalysis()
-# model.prepare(ctx_id=-1)
+# model.prepare(ctx_id=-1) face_recg2\face_recog_deepNN\dnn_face_recog\videos\harry_potter_premier.mp4
 # face_recg2\face_recog_deepNN\dnn_face_recog\videos\received_1179123699699768.mp4 face_recg2\face_recog_deepNN\dnn_face_recog\videos\face-demographics-walking.mp4
 video_path = 'videos/face-demographics-walking.mp4'  # Replace with your video file pathface_recg2\face_recog_deepNN\dnn_face_recog\videos\classroom.mp4
-video_capture = cv2.VideoCapture(0)
+# video_capture = cv2.VideoCapture(0)
+rtsp_url="rtsp://admin:Sscl1234@192.168.1.108:554/cam/realmonitor?channel=1&subtype=0"
 # video_capture = cv2.VideoCapture(video_path)
+video_capture = cv2.VideoCapture(rtsp_url)
+
+output_video_path = 'videos/output_video_with_faces.mp4'
 
 whitelist_encodings = []
 whitelist_names = []
 blacklist_encodings = []
 blacklist_names = []
+known_encodings=[]
+known_names=[]
+
+unknown_encodings = []
+unknown_names = []
+
+attendance_list={}
+
+face_buffer = []
+
+width = 1920
+height = 1080
+
+# with open('White_list_EncodeFile.p', 'rb') as f:
+#     whitelist_encodings, whitelist_names = pickle.load(f)
+
+# with open('Black_list_EncodeFile.p', 'rb') as f:
+#     blacklist_encodings, blacklist_names = pickle.load(f)
 
 
-with open('White_list_EncodeFile.p', 'rb') as f:
-    whitelist_encodings, whitelist_names = pickle.load(f)
+def load_known_encodings(filename):
+    """Load the whitelist encodings from the file."""
+    with open(filename, 'rb') as f:
+        return pickle.load(f)
 
-with open('Black_list_EncodeFile.p', 'rb') as f:
-    blacklist_encodings, blacklist_names = pickle.load(f)
+# with open('known_list_EncodeFile.p', 'rb') as f:
+#     known_encodings, known_names = pickle.load(f)
 
 
-known_encodings = whitelist_encodings + blacklist_encodings
-known_names = whitelist_names + blacklist_names
+
+# known_encodings = whitelist_encodings + blacklist_encodings
+# known_names = whitelist_names + blacklist_names
 # print(whitelist_names)
 # print(blacklist_names)
 
+# for name in whitelist_names:
+#     attendance_list[name] = 'Absent'
+
+print(attendance_list)
+
+def calculate_similarity_vectorized(embedding, known_encodings):
+    # Normalize the embedding and known encodings for cosine similarity
+    embedding = embedding / np.linalg.norm(embedding)
+    known_encodings = known_encodings / np.linalg.norm(known_encodings, axis=1, keepdims=True)
+
+    # Compute cosine similarities (1 - cosine distance)
+    distance = 1 - np.dot(known_encodings, embedding)
+    return distance
 
 
+# frame_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+# frame_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+# fps = int(video_capture.get(cv2.CAP_PROP_FPS))
+# fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 
+def add_face_to_buffer(frame,box):
+    x1, y1, x2, y2 = box
+    x1 = max(0, x1 - 80)
+    y1 = max(0, y1 - 80)
+    x2 = min(width, x2 + 80)
+    y2 = min(height, y2 + 80)
+    
+    face_image = frame[y1:y2, x1:x2]
+    face_buffer.append(face_image)
 
+def get_attendance():
+    return attendance_list
+# video_writer = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
+def precess_video():
+    # Process each frame in the video
+    frame_skip = 20  # Process every 2nd frame
+    frame_count = 0
+    unknown_count=0
+    
+    encode_filename = 'known_list_EncodeFile.p'
 
+    known_encodings, known_names = load_known_encodings(encode_filename)
+    last_modified_time = os.path.getmtime(encode_filename)
+    while True:
+        # Capture frame-by-frame
+        ret, frame = video_capture.read()
+        if not ret:
+            break  # End of video
+        
+        frame_count += 1
+        if frame_count % frame_skip != 0:
+            continue 
+        
+        frame = cv2.resize(frame, (width, height))
+        
+        # Detect faces in the frame
+        faces = app.get(frame)
+        
+        current_modified_time = os.path.getmtime(encode_filename)
+        if (current_modified_time != last_modified_time):
+            known_encodings, known_names = load_known_encodings(encode_filename)
+            last_modified_time = current_modified_time
+            print("Known encodings updated.")
 
-# Process each frame in the video
-while True:
-    # Capture frame-by-frame
-    ret, frame = video_capture.read()
-    if not ret:
-        break  # End of video
-
-    # Detect faces in the frame
-    faces = app.get(frame)
-
-    # Draw bounding boxes and labels for each detected face
-    for face in faces:
-        box = face.bbox.astype(int)  # Bounding box
-        cv2.rectangle(frame, (box[0], box[1]), (box[2], box[3]), (0, 255, 0), 2)
-
-        # Get recognition info if needed (e.g., embedding)
-        embedding = face.normed_embedding
-        similarities = [cosine(embedding, known_enc) for known_enc in known_encodings]
-        min_distance = min(similarities)
-        label = ""
-        name = ""
-        color_box=(0, 255, 0)
-        min_index = similarities.index(min_distance)
-        name = known_names[min_index]
-        print(f"name:{name} and dis:{min_distance}")
-        if min_distance < 0.76:
-            min_index = similarities.index(min_distance)
-            name = known_names[min_index]
-            if name in whitelist_names:
-                label = "Whitelist"  
+        # Draw bounding boxes and labels for each detected face
+        for face in faces:
+            box = face.bbox.astype(int)  # Bounding box
+            
+            print("new face detected")
+            # Get recognition info if needed (e.g., embedding)
+            embedding = face.normed_embedding
+            print(f"Face detected with probability: {face.det_score:.2f}")
+            if(face.det_score>.7):
+                # similarities = [cosine(embedding, known_enc) for known_enc in known_encodings]
+                similarities = calculate_similarity_vectorized(embedding, np.array(known_encodings))
+                min_distance = min(similarities)
+                label = ""
+                name = ""
                 color_box=(0, 255, 0)
-            else: 
-                label = "Blacklist"  
-                color_box=(0, 0, 255)
-        else:
-            name = "Unknown" 
-            color_box=(0, 255, 255)
+                # min_index = similarities.index(min_distance)
+                min_index = np.argmin(similarities)
+                name = known_names[min_index]
+                # print(f"name:{name} and dis:{min_distance}")
+                if min_distance < 0.7:
+                    # min_index = similarities.index(min_distance)
+                    min_index = np.argmin(similarities)
+                    name = known_names[min_index]
+                    if name in whitelist_names:
+                        label = "Whitelist"  
+                        color_box=(0, 255, 0)
+                    else: 
+                        label = "Blacklist"  
+                        color_box=(0, 0, 255)
+                    attendance_list[name] = 'Present'
+                else:
+                    name = "Unknown" 
+                    color_box=(0, 255, 255)
+                    if(len(unknown_encodings)==0):
+                        if (face.det_score >.84):
+                            unknown_encodings.append(embedding)
+                            id=f'U_{unknown_count}'
+                            unknown_names.append(id)
+                            add_face_to_buffer(frame,box)
+                            print(f"image added to buffer{id}")
+                            unknown_count+=1
+                    else:
+                        similarities_unknown = calculate_similarity_vectorized(embedding, unknown_encodings)
+                        min_distance_u = min(similarities_unknown)
+                        min_index_u = np.argmin(similarities_unknown)
+                        name = unknown_names[min_index_u]
+                        
+                        if min_distance_u < 0.7:
+                            name = unknown_names[min_index_u]
+                        else:
+                            if (face.det_score >.84):  #0.84561
+                                print(f"name:{name} and dis:{min_distance}")
+                                name, label, color_box = "Unknown", "Unknown", (0, 255, 255)
+                                unknown_encodings.append(embedding)
+                                id=f'U_{unknown_count}'
+                                unknown_names.append(id)
+                                add_face_to_buffer(frame,box)
+                                print(f"image added to buffer{id}")
+                                unknown_count+=1
+                
+                # # # Add additional information on the frame (e.g., gender, age)
+                # cv2.rectangle(frame, (box[0], box[1]), (box[2], box[3]), color_box, 2)
+                # cv2.putText(frame, name, (box[0], box[1] - 110), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_box, 2)
+
+        # Display the frame with annotations
+        cv2.imshow('InsightFace Video Processing', frame)
+        # video_writer.write(frame)
+        # plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
         
-        # Add additional information on the frame (e.g., gender, age)
+        # Press 'q' to quit the video display
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+# def close():
+#     # Release the video capture object and close display windows
+#     video_capture.release()
+#     # video_writer.release()
+#     cv2.destroyAllWindows()
+#     print("Video processing completed!")
+
+def clean_unknown(folder):
+    for the_file in os.listdir(folder):
+        file_path = os.path.join(folder, the_file)
+        try:
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+        except Exception as e:
+            print(e)
+
+def write_attendance_to_file():
+    un_im_dir='./images/unknown'
+    clean_unknown(un_im_dir)
+    unknown_written=0
+    while True:
+        time.sleep(5)  # 
+        with open('./attendance/attendance_list.txt', 'w') as file:
+            for name, status in attendance_list.items():
+                file.write(f"{name}: {status}\n")
         
-        cv2.putText(frame, name, (box[0], box[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_box, 2)
+        for i, face_image in enumerate(face_buffer):
+            if face_image is not None and face_image.size > 0:
+                output_path = os.path.join(un_im_dir, f'{unknown_names[unknown_written]}.jpg')
+                unknown_written+=1
+                cv2.imwrite(output_path, face_image)
+            
+        # with open('./attendance/unknown_list.txt', 'w') as file:
+        #     for name in unknown_names:
+        #         file.write(f"{name}\n")
+        face_buffer.clear()
+        print("Attendance list updated in file.")
+        
+        
+        
 
-    # Display the frame with annotations
-    cv2.imshow('InsightFace Video Processing', frame)
-    # plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+video_thread = threading.Thread(target=precess_video)
+video_thread.daemon = True
+video_thread.start()
 
+file_thread = threading.Thread(target=write_attendance_to_file)
+file_thread.daemon = True
+file_thread.start()
 
-    # Press 'q' to quit the video display
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-# Release the video capture object and close display windows
-video_capture.release()
-cv2.destroyAllWindows()
+while True:
+    time.sleep(1)

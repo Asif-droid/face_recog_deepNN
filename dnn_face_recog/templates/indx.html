@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>People Status</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>People Status</h1>
+    <table border="1" id="statusTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        function fetchStatus() {
+            $.ajax({
+                url: '/get_status',
+                method: 'GET',
+                success: function(data) {
+                    let tableBody = $('#statusTable tbody');
+                    tableBody.empty();
+                    data.forEach(person => {
+                        tableBody.append(
+                            `<tr><td>${person.name}</td><td>${person.status}</td></tr>`
+                        );
+                    });
+                }
+            });
+        }
+
+        // Fetch data every 5 seconds
+        setInterval(fetchStatus, 100);
+        $(document).ready(fetchStatus); // Initial load
+    </script>
+</body>
+</html>
