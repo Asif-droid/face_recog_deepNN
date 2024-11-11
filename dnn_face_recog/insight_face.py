@@ -85,6 +85,14 @@ def calculate_similarity_vectorized(embedding, known_encodings):
 # fps = int(video_capture.get(cv2.CAP_PROP_FPS))
 # fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 
+def is_blurry(frame, threshold=100.0,resize_factor=0.5):
+    # Resize the frame for faster processing
+    small_frame = cv2.resize(frame, (0, 0), fx=resize_factor, fy=resize_factor)
+    gray = cv2.cvtColor(small_frame, cv2.COLOR_BGR2GRAY)
+    laplacian = cv2.Laplacian(gray, cv2.CV_64F)
+    variance = laplacian.var()
+    return variance < threshold, variance
+
 def add_face_to_buffer(frame,box):
     x1, y1, x2, y2 = box
     x1 = max(0, x1 - 80)
@@ -100,7 +108,7 @@ def get_attendance():
 # video_writer = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
 def precess_video():
     # Process each frame in the video
-    frame_skip = 20  # Process every 2nd frame
+    frame_skip = 15  # Process every 2nd frame
     frame_count = 0
     unknown_count=0
     
@@ -114,9 +122,15 @@ def precess_video():
         if not ret:
             break  # End of video
         
+        
         frame_count += 1
         if frame_count % frame_skip != 0:
             continue 
+        
+        blurry, variance = is_blurry(frame, threshold=100.0)
+        if blurry:
+            print(f"Frame discarded due to blur (variance: {variance})")
+            continue
         
         frame = cv2.resize(frame, (width, height))
         
@@ -136,6 +150,7 @@ def precess_video():
             print("new face detected")
             # Get recognition info if needed (e.g., embedding)
             embedding = face.normed_embedding
+            print(len(embedding))
             print(f"Face detected with probability: {face.det_score:.2f}")
             if(face.det_score>.7):
                 # similarities = [cosine(embedding, known_enc) for known_enc in known_encodings]
@@ -163,7 +178,7 @@ def precess_video():
                     name = "Unknown" 
                     color_box=(0, 255, 255)
                     if(len(unknown_encodings)==0):
-                        if (face.det_score >.84):
+                        if (face.det_score >.845):
                             unknown_encodings.append(embedding)
                             id=f'U_{unknown_count}'
                             unknown_names.append(id)
@@ -179,7 +194,7 @@ def precess_video():
                         if min_distance_u < 0.7:
                             name = unknown_names[min_index_u]
                         else:
-                            if (face.det_score >.84):  #0.84561
+                            if (face.det_score >.845):  #0.84561
                                 print(f"name:{name} and dis:{min_distance}")
                                 name, label, color_box = "Unknown", "Unknown", (0, 255, 255)
                                 unknown_encodings.append(embedding)
@@ -223,11 +238,37 @@ def write_attendance_to_file():
     un_im_dir='./images/unknown'
     clean_unknown(un_im_dir)
     unknown_written=0
+    attendance_file='./attendance/attendance_list.txt'
+    atndnc_file_last_modified_time = None
+    
     while True:
         time.sleep(5)  # 
-        with open('./attendance/attendance_list.txt', 'w') as file:
+        with open(attendance_file, 'w') as file:
             for name, status in attendance_list.items():
                 file.write(f"{name}: {status}\n")
+        # atndnc_file_current_modified_time=os.path.getmtime(attendance_file)
+        # print(f"last modified time:{atndnc_file_last_modified_time} and current modified time:{atndnc_file_current_modified_time}")
+        # if(atndnc_file_current_modified_time!=atndnc_file_last_modified_time):
+        #     # print(attendance_list)
+        #     print("Attendance list updated.")
+        #     new_attendance_list = {}
+        #     with open(attendance_file, 'r') as file:
+        #         for line in file:
+        #             line = line.strip()
+        #             if not line:
+        #                 continue
+        #             name, status = line.split(': ')
+        #             new_attendance_list[name.strip()] = status.strip()
+                    
+        #     attendance_list = new_attendance_list
+            
+        # else:
+            
+        #     with open(attendance_file, 'w') as file:
+        #         for name, status in attendance_list.items():
+        #             file.write(f"{name}: {status}\n")
+        
+        # atndnc_file_last_modified_time=atndnc_file_current_modified_time
         
         for i, face_image in enumerate(face_buffer):
             if face_image is not None and face_image.size > 0:

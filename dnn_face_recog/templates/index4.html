@@ -147,6 +147,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            position: relative;
         }
         .person-card img {
             width: 100px;
@@ -162,6 +163,19 @@
         }
         .person-status {
             font-size: 16px;
+        }
+        .close-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: transparent;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #888;
+        }
+        .close-button:hover {
+            color: #f00;
         }
 
         #loadingScreen {
@@ -209,6 +223,7 @@
 </head>
 <body>
 <div>
+    <!-- Trigger Button <button class="close-button" onclick="removeCard(this,'${person.name}')">✖</button> -->
     <h1>Person List</h1>
     <div id="cardContainer"></div>
 </div>
@@ -218,10 +233,10 @@
 </div>
 
 <!-- Loading Screen -->
-<div id="loadingScreen" ></div>
+<div id="loadingScreen" >Training...</div>
 
 <!-- Trigger Button -->
-<button id="triggerButton" onclick="showLoading()">Start Encoding New Images</button>
+<button id="triggerButton" onclick="showLoading()">Train on New Images</button>
 
 <script>
 function fetchStatus() {
@@ -239,6 +254,7 @@ function fetchStatus() {
                 const defaultAvatar = `images/default/default.jpg`;
                 cardContainer.append(
                     `<div class="person-card">
+                        
                         <img src="${imageUrl}" alt="${person.name}" onerror="this.onerror=null; this.src='${defaultAvatar}';">
                         <div class="person-name">${person.name}</div>
                         <div class="person-status ${statusClass}">${person.status}</div>
@@ -348,6 +364,24 @@ function deleteImage(imageUrl) {
     });
 }
 
+function removeCard(button, personName) {
+    console.log("Removing person:", personName);
+    $.ajax({
+        url: '/delete_attendance',
+        method: 'DELETE',
+        contentType: 'application/json',
+        data: JSON.stringify({ name: personName }),
+        success: function(response) {
+            const card = button.parentElement;
+            card.remove();
+            console.log(response.message);
+        },
+        error: function(error) {
+            console.error("Error deleting person:", error);
+            alert("Failed to delete the person. Please try again.");
+        }
+    });
+}
 // Function to close the popup
 function closePopup() {
     $('.popup-overlay').remove();

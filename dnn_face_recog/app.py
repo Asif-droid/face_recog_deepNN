@@ -23,6 +23,13 @@ app = Flask(__name__)
     
 
 #     return jsonify(attendance)
+def delete(name1):
+    attendance = get_attendance()
+    with open('./attendance/attendance_list.txt', 'w') as file:
+        for name, status in attendance.items():
+            if(name1 == name):
+                continue
+            file.write(f"{name}: {status}\n")
 
 def get_attendance():
     # Read the attendance file  face_recg2\face_recog_deepNN\dnn_face_recog\attendance\attendance_list.txt
@@ -48,6 +55,16 @@ IMAGE_DIR_D = '/images/default'
 @app.route('/')
 def index():
     return render_template('index4.html')
+
+
+@app.route('/delete_attendance', methods=['DELETE'])
+def delete_attendance():
+    # print
+    data = request.get_json()
+    name = data.get('name')
+    delete(name)
+    return jsonify({'message': 'Attendance deleted successfully!'}), 200
+
 
 @app.route('/get_status')
 def get_status():
