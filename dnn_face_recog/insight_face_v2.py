@@ -10,12 +10,12 @@ import matplotlib.pyplot as plt
 app = FaceAnalysis(allowed_modules=['detection', 'recognition'])
 app.prepare(ctx_id=-1)  # Use -1 for CPU, or specify a GPU ID if available
 
-video_path = 'videos/received_1179123699699768.mp4'
+video_path = 'videos/ron.mp4'
 # Video source (0 for webcam or provide video file path)face_recg2\face_recog_deepNN\dnn_face_recog\videos\spectrum_cctv.mp4 face_recg2\face_recog_deepNN\dnn_face_recog\videos\received_1179123699699768.mp4
 # face_recg2\face_recog_deepNN\dnn_face_recog\videos\face-demographics-walking.mp4 face_recg2\face_recog_deepNN\dnn_face_recog\videos\classroom.mp4
-video_capture = cv2.VideoCapture(0) 
+# video_capture = cv2.VideoCapture(0) 
 rtsp_url="rtsp://admin:Sscl1234@192.168.1.108:554/cam/realmonitor?channel=1&subtype=0"
-# video_capture = cv2.VideoCapture(video_path)
+video_capture = cv2.VideoCapture(video_path)
 # video_capture = cv2.VideoCapture(rtsp_url)
 
 # Load encodings for whitelist and blacklist
@@ -37,7 +37,7 @@ def calculate_similarity_vectorized(embedding, known_encodings):
     return 1 - np.dot(known_encodings, embedding)
 
 # Define frame processing interval
-frame_skip = 15  # Process every 2nd frame
+frame_skip = 1  # Process every 2nd frame
 frame_count = 0
 unknown_count=0
 # Set up threading for parallel face detection

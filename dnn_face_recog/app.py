@@ -1,10 +1,11 @@
 from flask import Flask, request, jsonify, render_template, url_for, send_from_directory
 from shutil import copyfile
 import os
+from flask_cors import CORS
 import encode_all_known as encoder
 import time
 app = Flask(__name__)
-
+CORS(app)
 # def run_video_processing():
 #     face_app.precess_video()
 
@@ -54,7 +55,7 @@ IMAGE_DIR_D = '/images/default'
 
 @app.route('/')
 def index():
-    return render_template('index4.html')
+    return render_template('index.html')
 
 
 @app.route('/delete_attendance', methods=['DELETE'])
