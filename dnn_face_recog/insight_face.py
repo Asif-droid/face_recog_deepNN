@@ -108,7 +108,7 @@ def get_attendance():
 # video_writer = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
 def precess_video():
     # Process each frame in the video
-    frame_skip =  10 # Process every 2nd frame
+    frame_skip =  18 # Process every 2nd frame works best with 18
     frame_count = 0
     unknown_count=0
     
@@ -176,7 +176,7 @@ def precess_video():
                         color_box=(0, 255, 0)
                     else: 
                         label = "Blacklist"  
-                        color_box=(0, 0, 255)
+                        color_box=(0, 255, 0)
                     attendance_list[name] = 'Present'
                 else:
                     name = "Unknown" 

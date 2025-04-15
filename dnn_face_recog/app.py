@@ -55,7 +55,7 @@ IMAGE_DIR_D = '/images/default'
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index4.html')
 
 
 @app.route('/delete_attendance', methods=['DELETE'])
