@@ -108,7 +108,7 @@ def get_attendance():
 # video_writer = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
 def precess_video():
     # Process each frame in the video
-    frame_skip =  15 # Process every 2nd frame
+    frame_skip =  10 # Process every 2nd frame
     frame_count = 0
     unknown_count=0
     
@@ -209,8 +209,8 @@ def precess_video():
                                 unknown_count+=1
                 
                 # # # Add additional information on the frame (e.g., gender, age)
-                # cv2.rectangle(frame, (box[0], box[1]), (box[2], box[3]), color_box, 2)
-                # cv2.putText(frame, name, (box[0], box[1]-3), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_box, 2)
+                cv2.rectangle(frame, (box[0], box[1]), (box[2], box[3]), color_box, 2)
+                cv2.putText(frame, name, (box[0], box[1]-3), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_box, 2)
 
         # Display the frame with annotations
         cv2.imshow('InsightFace Video Processing', frame)
