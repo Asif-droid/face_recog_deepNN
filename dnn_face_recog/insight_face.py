@@ -18,13 +18,13 @@ app.prepare(ctx_id=-1)  # Use -1 for CPU, or specify a GPU ID if available
 # model = insightface.app.FaceAnalysis()
 # model.prepare(ctx_id=-1) face_recg2\face_recog_deepNN\dnn_face_recog\videos\harry_potter_premier.mp4
 # face_recg2\face_recog_deepNN\dnn_face_recog\videos\received_1179123699699768.mp4 face_recg2\face_recog_deepNN\dnn_face_recog\videos\face-demographics-walking.mp4
-video_path = 'videos/ron.mp4'  # Replace with your video file pathface_recg2\face_recog_deepNN\dnn_face_recog\videos\classroom.mp4
-video_capture = cv2.VideoCapture(0)
+video_path = 'videos/all_video4.mp4'  # Replace with your video file pathface_recg2\face_recog_deepNN\dnn_face_recog\videos\classroom.mp4
+# video_capture = cv2.VideoCapture(0)
 rtsp_url="rtsp://admin:Sscl1234@192.168.1.108:554/cam/realmonitor?channel=1&subtype=0"
 # video_capture = cv2.VideoCapture(video_path)
-# video_capture = cv2.VideoCapture(rtsp_url)
+video_capture = cv2.VideoCapture(rtsp_url)
 
-output_video_path = 'videos/output_video_with_faces.mp4'
+output_video_path = 'videos/all_4_faces.mp4'
 
 whitelist_encodings = []
 whitelist_names = []
@@ -68,7 +68,7 @@ def load_known_encodings(filename):
 # for name in whitelist_names:
 #     attendance_list[name] = 'Absent'
 
-print(attendance_list)
+# print(attendance_list)
 
 def calculate_similarity_vectorized(embedding, known_encodings):
     # Normalize the embedding and known encodings for cosine similarity
@@ -84,6 +84,7 @@ def calculate_similarity_vectorized(embedding, known_encodings):
 # frame_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
 # fps = int(video_capture.get(cv2.CAP_PROP_FPS))
 # fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+# video_writer = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
 
 def is_blurry(frame, threshold=100.0,resize_factor=0.5):
     # Resize the frame for faster processing
@@ -105,7 +106,7 @@ def add_face_to_buffer(frame,box):
 
 def get_attendance():
     return attendance_list
-# video_writer = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
+
 def precess_video():
     # Process each frame in the video
     frame_skip =  18 # Process every 2nd frame works best with 18
@@ -209,11 +210,11 @@ def precess_video():
                                 unknown_count+=1
                 
                 # # # Add additional information on the frame (e.g., gender, age)
-                cv2.rectangle(frame, (box[0], box[1]), (box[2], box[3]), color_box, 2)
-                cv2.putText(frame, name, (box[0], box[1]-3), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_box, 2)
+                # cv2.rectangle(frame, (box[0], box[1]), (box[2], box[3]), color_box, 2)
+                # cv2.putText(frame, name, (box[0], box[1]-3), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_box, 2)
 
         # Display the frame with annotations
-        cv2.imshow('InsightFace Video Processing', frame)
+        # cv2.imshow('InsightFace Video Processing', frame)
         # video_writer.write(frame)
         # plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
@@ -221,11 +222,14 @@ def precess_video():
         # Press 'q' to quit the video display
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-
+        
+    # close()
+    
+    
 # def close():
 #     # Release the video capture object and close display windows
 #     video_capture.release()
-#     # video_writer.release()
+#     video_writer.release()
 #     cv2.destroyAllWindows()
 #     print("Video processing completed!")
 
@@ -246,7 +250,7 @@ def write_attendance_to_file():
     atndnc_file_last_modified_time = None
     
     while True:
-        time.sleep(5)  # 
+        time.sleep(1)  # 
         with open(attendance_file, 'w') as file:
             for name, status in attendance_list.items():
                 file.write(f"{name}: {status}\n")
