@@ -23,4 +23,16 @@ change the cv2.VideoCapture() function to capture video from different src.
  video_capture = cv2.VideoCapture(0)     # web cam
 
 ```
+
+## Run web attendance
+first activate the python venv in 2 separate terminal
+```
+faceID\faceID\face_recg2\face_recog_deepNN\dnn_face_recog\Scripts\activate
+```
+Run insight_face.py in 1 terminal and app.py in another
+
+```
+python insight_face.py
+python app.py
+```
  
