@@ -21,8 +21,8 @@ app.prepare(ctx_id=-1)  # Use -1 for CPU, or specify a GPU ID if available
 video_path = 'videos/all_video4.mp4'  # Replace with your video file pathface_recg2\face_recog_deepNN\dnn_face_recog\videos\classroom.mp4
 # video_capture = cv2.VideoCapture(0)
 rtsp_url="rtsp://admin:Sscl1234@192.168.1.108:554/cam/realmonitor?channel=1&subtype=0"
-# video_capture = cv2.VideoCapture(video_path)
-video_capture = cv2.VideoCapture(rtsp_url)
+video_capture = cv2.VideoCapture(video_path)
+# video_capture = cv2.VideoCapture(rtsp_url)
 
 output_video_path = 'videos/all_4_faces.mp4'
 
