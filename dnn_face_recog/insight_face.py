@@ -124,9 +124,9 @@ def process_video():
     
     encode_filename = 'known_list_EncodeFile.p'
 
-    # known_encodings, known_names = load_known_encodings(encode_filename)
-    known_encodings=[]
-    known_names=[]
+    known_encodings, known_names = load_known_encodings(encode_filename)
+    # known_encodings=[]
+    # known_names=[]
     load_profile(known_encodings, known_names)
     last_modified_time = os.path.getmtime(encode_filename)
     while True:
@@ -164,11 +164,11 @@ def process_video():
         for face in faces:
             box = face.bbox.astype(int)  # Bounding box
             
-            print("new face detected")
+            # print("new face detected")
             # Get recognition info if needed (e.g., embedding)
             embedding = face.normed_embedding
-            print(len(embedding))
-            print(f"Face detected with probability: {face.det_score:.2f}")
+            # print(len(embedding))
+            # print(f"Face detected with probability: {face.det_score:.2f}")
             if(face.det_score>.5):
                 # similarities = [cosine(embedding, known_enc) for known_enc in known_encodings]
                 similarities = calculate_similarity_vectorized(embedding, np.array(known_encodings))
@@ -180,7 +180,7 @@ def process_video():
                 min_index = np.argmin(similarities)
                 name = known_names[min_index]
                 # print(f"name:{name} and dis:{min_distance}")
-                if min_distance < 0.7:
+                if min_distance < 0.68:
                     # min_index = similarities.index(min_distance)
                     min_index = np.argmin(similarities)
                     name = known_names[min_index]
@@ -191,12 +191,12 @@ def process_video():
                         label = "Blacklist"  
                         color_box=(0, 255, 0)
                     attendance_list[name] = 'Present'
-                    print(f"Recognized: {name}")
+                    # print(f"Recognized: {name}")
                 else:
                     name = "Unknown" 
                     color_box=(0, 255, 255)
                     if(len(unknown_encodings)==0):
-                        if (face.det_score >.845):
+                        if (face.det_score >.5):
                             unknown_encodings.append(embedding)
                             id=f'U_{unknown_count}'
                             unknown_names.append(id)
@@ -293,6 +293,11 @@ def write_attendance_to_file():
         
         for i, face_image in enumerate(face_buffer):
             if face_image is not None and face_image.size > 0:
+                blurry, variance = is_blurry(face_image, threshold=300.0)
+                print(variance)
+                if blurry:
+                    print(f"Frame discarded due to blur (variance: {variance})")
+                    continue
                 output_path = os.path.join(un_im_dir, f'{unknown_names[unknown_written]}.jpg')
                 unknown_written+=1
                 cv2.imwrite(output_path, face_image)
@@ -301,7 +306,7 @@ def write_attendance_to_file():
         #     for name in unknown_names:
         #         file.write(f"{name}\n")
         face_buffer.clear()
-        print("Attendance list updated in file.")
+        # print("Attendance list updated in file.")
         
         
         
