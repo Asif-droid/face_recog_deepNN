@@ -21,8 +21,8 @@ app.prepare(ctx_id=-1)  # Use -1 for CPU, or specify a GPU ID if available
 video_path = 'videos/all_video4.mp4'  # Replace with your video file pathface_recg2\face_recog_deepNN\dnn_face_recog\videos\classroom.mp4
 # video_capture = cv2.VideoCapture(0)
 rtsp_url="rtsp://admin:Sscl1234@192.168.1.108:554/cam/realmonitor?channel=1&subtype=0"
-# video_capture = cv2.VideoCapture(video_path)
-video_capture = cv2.VideoCapture(rtsp_url)
+video_capture = cv2.VideoCapture(video_path)
+# video_capture = cv2.VideoCapture(rtsp_url)
 
 output_video_path = 'videos/all_4_faces.mp4'
 
@@ -104,30 +104,39 @@ def add_face_to_buffer(frame,box):
     face_image = frame[y1:y2, x1:x2]
     face_buffer.append(face_image)
 
-def load_profile(known_encodings, known_names):
-    encoding_dict = load_known_encodings('profile_encodings.pkl')
-    for name, encodings in encoding_dict.items():
-        known_encodings.extend(encodings)
-        known_names.extend([name] * len(encodings))
-
 def get_attendance():
     return attendance_list
 
+def find_best_match(embedding, known_dict, threshold=0.6):
+    best_score = -1
+    best_name = None
 
-    
+    for name, enc_list in known_dict.items():
+        enc_array = np.array(enc_list)  # Convert list to numpy array
+        similarities = calculate_similarity_vectorized(embedding, enc_array)
+        max_sim = np.max(similarities)  # Best match for this person
 
-def process_video():
+        if max_sim > best_score:
+            best_score = max_sim
+            best_name = name
+
+    if best_score >= threshold:
+        return best_name, best_score
+    else:
+        return "Unknown", best_score
+
+
+
+def precess_video():
     # Process each frame in the video
     frame_skip =  18 # Process every 2nd frame works best with 18
     frame_count = 0
     unknown_count=0
     
-    encode_filename = 'known_list_EncodeFile.p'
+    encode_filename = 'profile_encodings.pkl'
 
     # known_encodings, known_names = load_known_encodings(encode_filename)
-    known_encodings=[]
-    known_names=[]
-    load_profile(known_encodings, known_names)
+    encoding_dict= load_known_encodings(encode_filename)
     last_modified_time = os.path.getmtime(encode_filename)
     while True:
         # Capture frame-by-frame
@@ -156,7 +165,7 @@ def process_video():
         
         current_modified_time = os.path.getmtime(encode_filename)
         if (current_modified_time != last_modified_time):
-            known_encodings, known_names = load_known_encodings(encode_filename)
+            encoding_dict = load_known_encodings(encode_filename)
             last_modified_time = current_modified_time
             print("Known encodings updated.")
 
@@ -169,7 +178,7 @@ def process_video():
             embedding = face.normed_embedding
             print(len(embedding))
             print(f"Face detected with probability: {face.det_score:.2f}")
-            if(face.det_score>.5):
+            if(face.det_score>.7):
                 # similarities = [cosine(embedding, known_enc) for known_enc in known_encodings]
                 similarities = calculate_similarity_vectorized(embedding, np.array(known_encodings))
                 min_distance = min(similarities)
@@ -191,7 +200,6 @@ def process_video():
                         label = "Blacklist"  
                         color_box=(0, 255, 0)
                     attendance_list[name] = 'Present'
-                    print(f"Recognized: {name}")
                 else:
                     name = "Unknown" 
                     color_box=(0, 255, 255)
@@ -267,29 +275,7 @@ def write_attendance_to_file():
         with open(attendance_file, 'w') as file:
             for name, status in attendance_list.items():
                 file.write(f"{name}: {status}\n")
-        # atndnc_file_current_modified_time=os.path.getmtime(attendance_file)
-        # print(f"last modified time:{atndnc_file_last_modified_time} and current modified time:{atndnc_file_current_modified_time}")
-        # if(atndnc_file_current_modified_time!=atndnc_file_last_modified_time):
-        #     # print(attendance_list)
-        #     print("Attendance list updated.")
-        #     new_attendance_list = {}
-        #     with open(attendance_file, 'r') as file:
-        #         for line in file:
-        #             line = line.strip()
-        #             if not line:
-        #                 continue
-        #             name, status = line.split(': ')
-        #             new_attendance_list[name.strip()] = status.strip()
-                    
-        #     attendance_list = new_attendance_list
-            
-        # else:
-            
-        #     with open(attendance_file, 'w') as file:
-        #         for name, status in attendance_list.items():
-        #             file.write(f"{name}: {status}\n")
-        
-        # atndnc_file_last_modified_time=atndnc_file_current_modified_time
+
         
         for i, face_image in enumerate(face_buffer):
             if face_image is not None and face_image.size > 0:
@@ -297,16 +283,14 @@ def write_attendance_to_file():
                 unknown_written+=1
                 cv2.imwrite(output_path, face_image)
             
-        # with open('./attendance/unknown_list.txt', 'w') as file:
-        #     for name in unknown_names:
-        #         file.write(f"{name}\n")
+      
         face_buffer.clear()
         print("Attendance list updated in file.")
         
         
         
 
-video_thread = threading.Thread(target=process_video)
+video_thread = threading.Thread(target=precess_video)
 video_thread.daemon = True
 video_thread.start()
 
